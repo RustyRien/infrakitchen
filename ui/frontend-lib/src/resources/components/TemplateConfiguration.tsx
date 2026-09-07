@@ -119,10 +119,11 @@ export const TemplateConfiguration = ({
   resource,
 }: TemplateConfigurationProps) => {
   const { ikApi } = useConfig();
-  const { refreshEntity, hasPendingChange } = useEntityProvider();
+  const { refreshEntity, hasPendingChange, userEntityPermissions } =
+    useEntityProvider();
   const { checkActionPermission } = usePermissionProvider();
   const canEdit = checkActionPermission("api:resource", "write");
-  const canEditStorage = checkActionPermission("api:storage", "admin");
+  const canEditStorage = userEntityPermissions.includes("admin");
   const sourceCodeVersionLifecycleState =
     resource.sourceCodeVersion?.lifecycleState?.toLowerCase();
   const showSourceCodeVersionLifecycleState =
