@@ -154,10 +154,10 @@ class WorkspaceTask:
         self.workspace_root = self.resource_task_controller.workspace_root
 
     # change entity state depends on task state
-    def make_failed(self) -> None:
+    async def make_failed(self) -> None:
         self.workspace_instance.status = ModelStatus.ERROR
 
-    def make_retry(self, retry: int, max_retries: int):
+    async def make_retry(self, retry: int, max_retries: int):
         if self.workspace_instance.status == ModelStatus.IN_PROGRESS:
             self.workspace_instance.status = ModelStatus.ERROR
 

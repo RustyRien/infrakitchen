@@ -416,7 +416,7 @@ class ResourceTask:
                 action=ModelActions.EXECUTE,
                 extra_metadata={"resource_id": str(self.resource_instance.id)},
             )
-            await self.event_sender.flush()
+            await workflow_sender.flush()
         except Exception:
             # Don't fail the resource task if workflow callback fails
             logging.getLogger(__name__).warning(

@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     JWT_KEY: str = "supersecret"
     SESSION_EXPIRATION: str = "3600"
     MCP_ENABLED: bool = False
+    # Task queue / worker settings
+    WORKER_POLL_INTERVAL: float = 5.0  # seconds between polls when no task notification arrives
+    WORKER_LEASE_SECONDS: int = 90  # how long a claimed task stays owned without a heartbeat
+    WORKER_HEARTBEAT_SECONDS: int = 30  # how often a worker extends its lease and reports itself alive
+    TASK_QUEUE_RETENTION_DAYS: int = 14  # finished queue rows older than this are purged
 
     class ConfigDict:
         env_file = ".env"

@@ -14,9 +14,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from application.logger import change_logger, get_uvicorn_log_config
 from build_info import write_build_info
 from core.config import setup_service_environment
-from core.rabbitmq import RabbitMQConnection
 from core.utils.event_sender import EventSender
-from scheduler import schedule_jobs, schedule_polling_job, start_reload_consumer
+from scheduler import schedule_jobs, schedule_polling_job, schedule_task_queue_cleanup_job, start_reload_consumer
 from worker import run_task_worker
 
 from src.app import app
@@ -58,8 +57,8 @@ def run_sql_migrations():
 async def start_task_worker():
     """Initializes and runs the TaskWorker indefinitely."""
     await web.start_http_server(port=8001)
-    rabbitmq = RabbitMQConnection()
-    await run_task_worker(rabbitmq)
+    # uvicorn owns the process signals in dev mode
+    await run_task_worker(handle_signals=False)
 
 
 async def setup_scheduler() -> tuple[AsyncIOScheduler, "asyncio.Task[None]"]:
@@ -74,6 +73,7 @@ async def setup_scheduler() -> tuple[AsyncIOScheduler, "asyncio.Task[None]"]:
 
     await schedule_jobs(scheduler=scheduler, event_sender=event_sender)
     await schedule_polling_job(scheduler=scheduler, event_sender=event_sender)
+    schedule_task_queue_cleanup_job(scheduler=scheduler)
 
     scheduler.start()
 

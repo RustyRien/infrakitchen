@@ -51,6 +51,7 @@ from graphql_api.modules.workflow.mutations import WorkflowMutation
 from graphql_api.modules.workspace.queries import WorkspaceQuery
 from graphql_api.modules.workspace.mutations import WorkspaceMutation
 from graphql_api.modules.worker.queries import WorkerQuery
+from graphql_api.modules.task_queue.queries import TaskQueueQuery
 from graphql_api.modules.providers.slack.queries import SlackQuery
 from graphql_api.modules.providers.github.queries import GithubQuery
 from graphql_api.modules.providers.bitbucket.queries import BitbucketQuery
@@ -100,6 +101,7 @@ class Query(
     WorkflowQuery,
     WorkspaceQuery,
     WorkerQuery,
+    TaskQueueQuery,
     GithubQuery,
     BitbucketQuery,
     AzureDevopsQuery,

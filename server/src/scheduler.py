@@ -18,6 +18,8 @@ from core.errors import EntityNotFound
 from core.rabbitmq import RabbitMQConnection
 from core.scheduler.crud import SchedulerJobCRUD
 from core.scheduler.model import JobType
+from core.config import Settings
+from core.task_queue.functions import task_queue_service
 from core.tasks.crud import TaskEntityCRUD
 from core.users.crud import UserCRUD
 from core.users.service import UserService
@@ -30,6 +32,8 @@ logger = logging.getLogger("scheduler")
 # Id of the internal polling job. Excluded when reconciling DB jobs so it is
 # never treated as a stale job and removed.
 POLL_JOB_ID = "poll_new_jobs"
+TASK_QUEUE_CLEANUP_JOB_ID = "task_queue_cleanup"
+INTERNAL_JOB_IDS = {POLL_JOB_ID, TASK_QUEUE_CLEANUP_JOB_ID}
 ENTITY_ACTION_JOB_PREFIX = "entity_action:"
 
 # Serializes reconciliation so the event-driven reload and the periodic poll
@@ -132,7 +136,7 @@ async def schedule_jobs(scheduler: AsyncIOScheduler, event_sender: EventSender):
 
         # Remove jobs that were deleted from the DB (ignore internal jobs).
         for existing in scheduler.get_jobs():
-            if existing.id == POLL_JOB_ID:
+            if existing.id in INTERNAL_JOB_IDS:
                 continue
             if existing.id.startswith(ENTITY_ACTION_JOB_PREFIX):
                 continue
@@ -191,6 +195,23 @@ async def schedule_polling_job(scheduler: AsyncIOScheduler, event_sender: EventS
         trigger=interval_trigger,
         kwargs={"scheduler": scheduler, "event_sender": event_sender},
         id=POLL_JOB_ID,
+        replace_existing=True,
+    )
+
+
+async def purge_task_queue():
+    retention_days = Settings().TASK_QUEUE_RETENTION_DAYS
+    async with task_queue_service() as service:
+        deleted = await service.purge_finished(older_than_days=retention_days)
+    logger.info(f"Purged {deleted} finished task queue items older than {retention_days} days")
+
+
+def schedule_task_queue_cleanup_job(scheduler: AsyncIOScheduler):
+    """Schedules a daily job that removes old finished items from the task queue."""
+    scheduler.add_job(
+        purge_task_queue,
+        trigger=IntervalTrigger(days=1),
+        id=TASK_QUEUE_CLEANUP_JOB_ID,
         replace_existing=True,
     )
 
@@ -259,6 +280,7 @@ async def start_scheduler():
 
     await schedule_jobs(scheduler=scheduler, event_sender=event_sender)
     await schedule_polling_job(scheduler=scheduler, event_sender=event_sender)
+    schedule_task_queue_cleanup_job(scheduler=scheduler)
 
     scheduler.start()
     logger.info("Scheduler started")

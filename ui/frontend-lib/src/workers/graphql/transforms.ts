@@ -11,3 +11,33 @@ export interface GqlWorker {
   createdAt: string;
   updatedAt: string;
 }
+
+export type TaskWaitingReason =
+  | "entity_busy"
+  | "retry_delay"
+  | "no_workers"
+  | "workers_busy"
+  | "pending_pickup";
+
+export interface GqlQueuedTask {
+  id: string;
+  entity: string;
+  action: string | null;
+  status: "queued" | "running";
+  createdAt: string;
+  availableAt: string | null;
+  startedAt: string | null;
+  retries: number;
+  maxRetries: number;
+  position: number | null;
+  workerHost: string | null;
+  creatorId: string | null;
+  creatorName: string | null;
+  waitingReason: TaskWaitingReason | null;
+}
+
+export interface GqlEntityQueueStatus {
+  workersFree: number;
+  workersOnline: number;
+  tasks: GqlQueuedTask[];
+}
